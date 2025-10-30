@@ -46,10 +46,20 @@ els.saveSettingsBtn?.addEventListener('click', () => {
 // Connect directly to OpenAI
 async function connectToOpenAI() {
   try {
-    const apiKey = els.apiKeyInput.value.trim();
+    // Get API key from input or storage
+    let apiKey = els.apiKeyInput.value.trim();
+    
+    if (!apiKey) {
+      // Try to get from storage
+      const stored = await chrome.storage.local.get(['openaiApiKey']);
+      apiKey = stored.openaiApiKey;
+    }
+    
     if (!apiKey) {
       throw new Error('Please enter your OpenAI API key in settings');
     }
+    
+    console.log('Connecting with API key:', apiKey.substring(0, 10) + '...');
 
     els.orbStatus.textContent = 'Connecting to OpenAI...';
     
@@ -241,12 +251,35 @@ els.voiceBtn?.addEventListener('mouseup', () => {
   }
 });
 
-// Connect button
-els.connectBtn?.addEventListener('click', () => {
+// Connect button (both regular and modal)
+const connectHandler = () => {
   if (connected) {
     disconnect();
   } else {
-    connectToOpenAI();
+    // Load the saved API key before connecting
+    chrome.storage.local.get(['openaiApiKey'], (result) => {
+      if (result.openaiApiKey) {
+        els.apiKeyInput.value = result.openaiApiKey;
+        connectToOpenAI();
+      } else {
+        alert('Please enter and save your OpenAI API key first');
+      }
+    });
+  }
+};
+
+els.connectBtn?.addEventListener('click', connectHandler);
+document.getElementById('modalConnectBtn')?.addEventListener('click', () => {
+  // Save and connect
+  const apiKey = els.apiKeyInput.value.trim();
+  if (apiKey) {
+    chrome.storage.local.set({ openaiApiKey: apiKey }, () => {
+      console.log('API key saved');
+      els.settingsModal?.classList.remove('open');
+      connectToOpenAI();
+    });
+  } else {
+    alert('Please enter your OpenAI API key');
   }
 });
 
