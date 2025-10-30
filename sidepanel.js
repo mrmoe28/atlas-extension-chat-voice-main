@@ -311,22 +311,47 @@ window.addEventListener('resize', () => {
 async function getEphemeralToken(serverBase) {
   try {
     const r = await fetch(`${serverBase}/api/ephemeral`);
+    
+    // Get response as text first to check if it's HTML or JSON
+    const responseText = await r.text();
+    
     if (!r.ok) {
-      const errorText = await r.text();
-      console.error('Server response:', errorText);
+      console.error('Server response status:', r.status);
+      console.error('Server response:', responseText);
       
-      // Check if it's a 404 or connection error
-      if (r.status === 404) {
-        throw new Error('Server endpoint not found. Make sure the server is running at ' + serverBase);
-      } else if (r.status === 500) {
-        throw new Error('Server error: OpenAI API key may not be configured. Check server .env file.');
+      // Check if response is HTML (error page)
+      if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+        if (r.status === 404) {
+          throw new Error('API endpoint not found. The server may need to be redeployed.');
+        } else if (r.status === 500 || r.status === 502) {
+          throw new Error('Server error. Check Vercel logs and ensure environment variables are set.');
+        }
+        throw new Error(`Server returned HTML instead of JSON (Status: ${r.status}). Check server deployment.`);
       }
-      throw new Error(`Failed to get ephemeral key (${r.status}): ${errorText}`);
+      
+      // Try to parse as JSON error
+      try {
+        const errorData = JSON.parse(responseText);
+        throw new Error(errorData.error || `Server error: ${r.status}`);
+      } catch (parseError) {
+        // If not JSON, use the text as error message
+        if (r.status === 500) {
+          throw new Error('Server error: OpenAI API key may not be configured. Check server environment variables.');
+        }
+        throw new Error(`Failed to get ephemeral key (${r.status})`);
+      }
     }
-    return r.json();
+    
+    // Parse successful response
+    try {
+      return JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse server response as JSON:', responseText);
+      throw new Error('Server returned invalid JSON. Check server logs.');
+    }
   } catch (error) {
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      throw new Error('Cannot connect to server. Please ensure:\n1. Server is running (npm run server)\n2. Server URL is correct\n3. Check console for CORS issues');
+      throw new Error('Cannot connect to server. Please ensure:\n1. Server is deployed and running\n2. Server URL is correct\n3. Check console for CORS issues');
     }
     throw error;
   }
