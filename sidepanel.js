@@ -2519,7 +2519,14 @@ function loadSettings() {
   console.log('Settings:', { savedServerUrl, savedDesktopMode, savedContinuousMode, savedVisionMode, savedTemperature, savedMemoryEnabled, savedSpecialInstructions });
 
   if (savedServerUrl) {
-    els.serverUrl.value = savedServerUrl;
+    // Migrate old URL to new URL if needed
+    if (savedServerUrl === 'https://atlas-extension-chat-voice.vercel.app') {
+      console.log('🔄 Migrating old server URL to new one');
+      els.serverUrl.value = 'https://server-flame-iota.vercel.app';
+      localStorage.setItem('atlasVoice_serverUrl', 'https://server-flame-iota.vercel.app');
+    } else {
+      els.serverUrl.value = savedServerUrl;
+    }
   }
 
   if (savedDesktopMode === 'true') {
