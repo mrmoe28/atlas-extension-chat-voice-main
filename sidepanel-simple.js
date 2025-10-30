@@ -5,6 +5,8 @@ let els = {};
 let continuousMode = false;
 let selectedVoice = 'alloy';
 let conversationHistory = [];
+let isProcessing = false;  // Prevent multiple simultaneous API calls
+let shouldRestartRecognition = false;  // Control when to restart in continuous mode
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
@@ -316,7 +318,7 @@ async function startRecording() {
       
       recognition = new SpeechRecognition();
       recognition.lang = 'en-US';
-      recognition.continuous = true;  // Keep listening until manually stopped
+      recognition.continuous = false;  // Stop after getting result
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       
@@ -331,8 +333,13 @@ async function startRecording() {
         // Update status to show interim results
         if (event.results[0].isFinal) {
           console.log('Final transcript:', transcript);
-          els.orbStatus.textContent = 'Processing...';
-          processTranscript(transcript);
+          
+          // Prevent multiple processing
+          if (!isProcessing && transcript.trim().length > 0) {
+            els.orbStatus.textContent = 'Processing...';
+            recognition.stop();  // Stop recognition while processing
+            processTranscript(transcript);
+          }
         } else {
           els.orbStatus.textContent = 'Listening: ' + transcript.substring(0, 30) + '...';
         }
@@ -356,15 +363,16 @@ async function startRecording() {
         console.log('Speech recognition ended');
         els.voiceOrb?.classList.remove('listening');
         
-        // Restart if in continuous mode
-        if (continuousMode && connected) {
+        // Only restart if in continuous mode and we should restart
+        if (continuousMode && connected && shouldRestartRecognition) {
           console.log('Restarting recognition (continuous mode)');
           setTimeout(() => {
-            if (connected && continuousMode) {
+            if (connected && continuousMode && !isProcessing) {
+              shouldRestartRecognition = false;
               recognition.start();
               els.voiceOrb?.classList.add('listening');
             }
-          }, 500);
+          }, 1000);  // Wait a bit longer before restarting
         }
       };
     }
@@ -373,6 +381,11 @@ async function startRecording() {
     recognition.start();
     els.voiceOrb?.classList.add('listening');
     els.orbStatus.textContent = 'Listening...';
+    
+    // Set flag for continuous mode
+    if (continuousMode) {
+      shouldRestartRecognition = true;
+    }
     
   } catch (error) {
     console.error('Speech recognition error:', error);
@@ -388,6 +401,14 @@ function stopRecording() {
 }
 
 async function processTranscript(text) {
+  // Prevent multiple simultaneous calls
+  if (isProcessing) {
+    console.log('Already processing, ignoring duplicate call');
+    return;
+  }
+  
+  isProcessing = true;
+  
   try {
     // Get API key
     let apiKey = els.apiKeyInput?.value.trim();
@@ -403,7 +424,7 @@ async function processTranscript(text) {
       throw new Error('No API key found. Please enter your OpenAI API key in settings.');
     }
     
-    // Show user message
+    // Show user message immediately
     addMessage('user', text);
     
     // Get ChatGPT response
@@ -452,7 +473,7 @@ async function processTranscript(text) {
     const chatData = await chatResponse.json();
     const aiResponse = chatData.choices[0].message.content;
     
-    // Show AI response
+    // Show AI response immediately
     addMessage('assistant', aiResponse);
     
     // Speak response using OpenAI TTS
@@ -479,6 +500,14 @@ async function processTranscript(text) {
     }
     
     alert(displayMessage);
+  } finally {
+    // Reset processing flag
+    isProcessing = false;
+    
+    // Set flag to restart recognition if in continuous mode
+    if (continuousMode) {
+      shouldRestartRecognition = true;
+    }
   }
 }
 
