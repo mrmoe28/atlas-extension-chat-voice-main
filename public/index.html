@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Atlas Voice Extension API Server</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #ededed;
+        }
+        h1 { color: #3b82f6; }
+        .endpoint {
+            background: #1a1a1a;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        code {
+            background: #2a2a2a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Atlas Voice Extension API Server</h1>
+    <p>This is the backend API server for the Atlas Voice Chrome Extension.</p>
+    
+    <h2>Available Endpoints:</h2>
+    
+    <div class="endpoint">
+        <h3>GET/POST <code>/api/ephemeral</code></h3>
+        <p>Returns ephemeral credentials for OpenAI Realtime API connection.</p>
+    </div>
+    
+    <div class="endpoint">
+        <h3>GET <code>/api/test</code></h3>
+        <p>Test endpoint to verify API is working and environment variables are set.</p>
+    </div>
+    
+    <div class="endpoint">
+        <h3>GET <code>/api/knowledge</code></h3>
+        <p>Returns knowledge base data (mock data for now).</p>
+    </div>
+    
+    <div class="endpoint">
+        <h3>POST <code>/api/desktop</code></h3>
+        <p>Desktop control commands (only works locally, not on Vercel).</p>
+    </div>
+</body>
+</html>
