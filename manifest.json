@@ -17,6 +17,7 @@
   "host_permissions": [
     "https://api.openai.com/*",
     "https://atlas-extension-chat-voice.vercel.app/*",
+    "https://server-flame-iota.vercel.app/*",
     "http://localhost:8787/*",
     "<all_urls>"
   ],
