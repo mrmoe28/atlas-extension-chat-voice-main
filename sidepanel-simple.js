@@ -441,28 +441,38 @@ async function processTranscript(text) {
       if (searchQuery) {
         await performWebSearch(searchQuery);
       }
+    } else if (lowerText.includes('open youtube') || 
+               lowerText.includes('youtube')) {
+      // Special handling for YouTube
+      await performWebSearch('youtube.com');
+      return; // Skip ChatGPT response
     } else if (lowerText.includes('click on') || 
                lowerText.includes('click the')) {
       // Handle click commands
       const target = extractClickTarget(text);
       if (target) {
         await performClick(target);
+        return; // Skip ChatGPT response
       }
     } else if (lowerText.includes('scroll down') || 
                lowerText.includes('scroll up')) {
       // Handle scroll commands
       await performScroll(lowerText.includes('down') ? 'down' : 'up');
+      return; // Skip ChatGPT response
     } else if (lowerText.includes('go back')) {
       // Go back in browser history
       await browserGoBack();
+      return; // Skip ChatGPT response
     } else if (lowerText.includes('refresh') || 
                lowerText.includes('reload')) {
       // Refresh the page
       await browserRefresh();
+      return; // Skip ChatGPT response
     } else if (lowerText.includes('read the page') || 
                lowerText.includes('what does it say')) {
       // Extract and read page content
       await readPageContent();
+      return; // Skip ChatGPT response
     }
     
     // Get ChatGPT response
@@ -621,11 +631,15 @@ function addMessage(role, content) {
   els.chatContainer.appendChild(messageDiv);
   els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
   
-  // Show chat container if hidden
-  if (els.chatContainer.style.display === 'none') {
+  // Show chat container if hidden and hide orb
+  if (els.chatContainer.style.display === 'none' || !els.chatContainer.style.display) {
     els.chatContainer.style.display = 'flex';
     els.chatContainer.style.flexDirection = 'column';
     els.chatContainer.style.padding = '10px';
+    els.chatContainer.style.paddingBottom = '120px'; // Space for input footer
+    els.chatContainer.style.overflowY = 'auto';
+    els.chatContainer.style.height = 'calc(100vh - 60px - 120px)'; // Full height minus header and footer
+    
     const orbWrapper = document.getElementById('voiceOrbWrapper');
     if (orbWrapper) {
       orbWrapper.style.display = 'none';
@@ -778,20 +792,35 @@ function extractSearchQuery(text) {
 async function performWebSearch(query) {
   console.log('Performing web search for:', query);
   
-  // Check if it's a URL
+  // Check if it's a URL or known site
   const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
   const isURL = urlPattern.test(query);
   
-  if (isURL) {
+  // Common sites mapping
+  const commonSites = {
+    'youtube': 'https://youtube.com',
+    'youtube.com': 'https://youtube.com',
+    'google': 'https://google.com',
+    'facebook': 'https://facebook.com',
+    'twitter': 'https://twitter.com',
+    'amazon': 'https://amazon.com',
+    'github': 'https://github.com'
+  };
+  
+  if (commonSites[query.toLowerCase()]) {
+    // Open known site directly
+    const url = commonSites[query.toLowerCase()];
+    openWebsite(url);
+    addMessage('assistant', `Opening ${query}...`);
+  } else if (isURL) {
     // Open URL directly
     const url = query.startsWith('http') ? query : 'https://' + query;
     openWebsite(url);
+    addMessage('assistant', `Opening ${url}...`);
   } else {
     // Perform Google search
     const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     openWebsite(searchUrl);
-    
-    // Also add a message about the search
     addMessage('assistant', `Searching for "${query}"... Opening in a new tab.`);
   }
 }
@@ -803,7 +832,7 @@ function openWebsite(url) {
   // Option 1: Open in new tab (works in extension)
   chrome.tabs.create({ url: url }, (tab) => {
     console.log('Opened tab:', tab);
-    addMessage('assistant', `Opened ${url} in a new tab. You can switch to that tab to view the website.`);
+    // Message is already added in performWebSearch, so don't duplicate
   });
   
   // Option 2: If you want to show in an iframe (note: many sites block iframes)
