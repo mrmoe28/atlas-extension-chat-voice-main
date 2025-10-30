@@ -18,7 +18,7 @@ const els = {
   settingsModal: document.getElementById('settingsModal'),
   saveSettingsBtn: document.getElementById('saveSettings'),
   voiceOrb: document.getElementById('voiceOrb'),
-  chatMessages: document.getElementById('chatMessages')
+  chatContainer: document.getElementById('chatContainer')
 };
 
 // Load saved API key
@@ -174,8 +174,14 @@ function addMessage(role, content) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${role}`;
   messageDiv.textContent = content;
-  els.chatMessages.appendChild(messageDiv);
-  els.chatMessages.scrollTop = els.chatMessages.scrollHeight;
+  els.chatContainer.appendChild(messageDiv);
+  els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
+  
+  // Show chat container if hidden
+  if (els.chatContainer.style.display === 'none') {
+    els.chatContainer.style.display = 'block';
+    document.getElementById('voiceOrbWrapper').style.display = 'none';
+  }
   
   // Save to database (if needed)
   saveToDatabase({ role, content, timestamp: new Date() });
