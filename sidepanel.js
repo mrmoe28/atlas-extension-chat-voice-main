@@ -309,9 +309,27 @@ window.addEventListener('resize', () => {
 });
 
 async function getEphemeralToken(serverBase) {
-  const r = await fetch(`${serverBase}/api/ephemeral`);
-  if (!r.ok) throw new Error('Failed to get ephemeral key');
-  return r.json();
+  try {
+    const r = await fetch(`${serverBase}/api/ephemeral`);
+    if (!r.ok) {
+      const errorText = await r.text();
+      console.error('Server response:', errorText);
+      
+      // Check if it's a 404 or connection error
+      if (r.status === 404) {
+        throw new Error('Server endpoint not found. Make sure the server is running at ' + serverBase);
+      } else if (r.status === 500) {
+        throw new Error('Server error: OpenAI API key may not be configured. Check server .env file.');
+      }
+      throw new Error(`Failed to get ephemeral key (${r.status}): ${errorText}`);
+    }
+    return r.json();
+  } catch (error) {
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error('Cannot connect to server. Please ensure:\n1. Server is running (npm run server)\n2. Server URL is correct\n3. Check console for CORS issues');
+    }
+    throw error;
+  }
 }
 
 async function ensureMic() {
