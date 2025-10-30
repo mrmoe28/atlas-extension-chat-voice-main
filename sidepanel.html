@@ -80,6 +80,16 @@
         </div>
 
         <div class="setting-item">
+          <label for="voiceSelect" class="slider-label">
+            <span>Voice Selection</span>
+          </label>
+          <select id="voiceSelect" class="voice-select-dropdown" style="width: 100%; padding: 8px; background: #1e293b; color: white; border: 1px solid #334155; border-radius: 6px; margin-top: 8px;">
+            <!-- Options will be added by JavaScript -->
+          </select>
+          <p class="mode-description">Choose your preferred AI voice</p>
+        </div>
+
+        <div class="setting-item">
           <label class="mode-toggle">
             <input type="checkbox" id="desktopMode" />
             <span>Desktop Commander mode</span>
@@ -440,8 +450,23 @@
       </div>
     </div>
 
-    <!-- Fixed Footer with Voice Button -->
+    <!-- Fixed Footer with Voice Button and Text Input -->
     <footer class="footer-fixed">
+      <div class="input-container">
+        <input 
+          type="text" 
+          id="textInput" 
+          class="text-input" 
+          placeholder="Type a message or hold mic to speak..." 
+          disabled
+        />
+        <button id="sendBtn" class="send-btn" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
       <button id="voiceBtn" class="voice-btn-large" disabled>
         <div class="mic-icon-large">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -451,12 +476,11 @@
           </svg>
         </div>
       </button>
-      <span id="voiceStatus" class="voice-status">Hold to talk</span>
+      <span id="voiceStatus" class="voice-status">Hold to talk or type</span>
     </footer>
 
     <!-- Hidden Web Speech Fallback -->
     <div style="display:none;">
-      <select id="voiceSelect"></select>
       <button id="recStart">Start STT</button>
       <button id="recStop">Stop STT</button>
       <button id="ttsSay">Speak</button>
