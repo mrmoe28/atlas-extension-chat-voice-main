@@ -9,6 +9,9 @@ let isListening = false;
 
 // Get DOM elements
 const els = {
+  menuBtn: document.getElementById('menuBtn'),
+  sideMenu: document.getElementById('sideMenu'),
+  menuOverlay: document.getElementById('menuOverlay'),
   connectBtn: document.getElementById('connectBtn'),
   voiceBtn: document.getElementById('voiceBtn'),
   orbStatus: document.getElementById('orbStatus'),
@@ -246,9 +249,24 @@ els.connectBtn?.addEventListener('click', () => {
   }
 });
 
+// Hamburger menu
+els.menuBtn?.addEventListener('click', () => {
+  els.sideMenu.classList.add('open');
+  els.menuOverlay.classList.add('visible');
+});
+
+// Close menu when clicking overlay
+els.menuOverlay?.addEventListener('click', () => {
+  els.sideMenu.classList.remove('open');
+  els.menuOverlay.classList.remove('visible');
+});
+
 // Settings button
 els.settingsBtn?.addEventListener('click', () => {
   els.settingsModal.style.display = 'flex';
+  // Close side menu if open
+  els.sideMenu?.classList.remove('open');
+  els.menuOverlay?.classList.remove('visible');
 });
 
 // Close settings modal
