@@ -10,8 +10,6 @@ let isListening = false;
 // Get DOM elements
 const els = {
   menuBtn: document.getElementById('menuBtn'),
-  sideMenu: document.getElementById('sideMenu'),
-  menuOverlay: document.getElementById('menuOverlay'),
   connectBtn: document.getElementById('connectBtn'),
   voiceBtn: document.getElementById('voiceBtn'),
   orbStatus: document.getElementById('orbStatus'),
@@ -252,16 +250,15 @@ els.connectBtn?.addEventListener('click', () => {
   }
 });
 
-// Hamburger menu
+// Hamburger menu - directly open settings modal
 els.menuBtn?.addEventListener('click', () => {
-  els.sideMenu.classList.add('open');
-  els.menuOverlay.classList.add('visible');
-});
-
-// Close menu when clicking overlay
-els.menuOverlay?.addEventListener('click', () => {
-  els.sideMenu.classList.remove('open');
-  els.menuOverlay.classList.remove('visible');
+  console.log('Hamburger menu clicked');
+  if (els.settingsModal) {
+    els.settingsModal.classList.add('open');
+    console.log('Settings modal opened from hamburger menu');
+  } else {
+    console.error('Settings modal not found');
+  }
 });
 
 // Settings button
@@ -273,9 +270,6 @@ els.settingsBtn?.addEventListener('click', () => {
   } else {
     console.error('Settings modal element not found');
   }
-  // Close side menu if open
-  els.sideMenu?.classList.remove('open');
-  els.menuOverlay?.classList.remove('visible');
 });
 
 // Close settings modal - multiple ways
