@@ -5,27 +5,48 @@ let audioContext = null;
 let mediaRecorder = null;
 let connected = false;
 
-// Get DOM elements
-const els = {
-  menuBtn: document.getElementById('menuBtn'),
-  connectBtn: document.getElementById('connectBtn'),
-  voiceBtn: document.getElementById('voiceBtn'),
-  orbStatus: document.getElementById('orbStatus'),
-  statusDot: document.getElementById('statusDot'),
-  apiKeyInput: document.getElementById('apiKey'),
-  settingsBtn: document.getElementById('settingsBtn'),
-  settingsModal: document.getElementById('settingsModal'),
-  saveSettingsBtn: document.getElementById('saveSettings'),
-  voiceOrb: document.getElementById('voiceOrb'),
-  chatContainer: document.getElementById('chatContainer')
-};
-
-// Load saved API key
-chrome.storage.local.get(['openaiApiKey'], (result) => {
-  if (result.openaiApiKey) {
-    els.apiKeyInput.value = result.openaiApiKey;
-  }
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, initializing...');
+  
+  // Get DOM elements
+  const els = {
+    menuBtn: document.getElementById('menuBtn'),
+    connectBtn: document.getElementById('connectBtn'),
+    voiceBtn: document.getElementById('voiceBtn'),
+    orbStatus: document.getElementById('orbStatus'),
+    statusDot: document.getElementById('statusDot'),
+    apiKeyInput: document.getElementById('apiKey'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsModal: document.getElementById('settingsModal'),
+    saveSettingsBtn: document.getElementById('saveSettings'),
+    voiceOrb: document.getElementById('voiceOrb'),
+    chatContainer: document.getElementById('chatContainer')
+  };
+  
+  console.log('Elements found:', {
+    menuBtn: !!els.menuBtn,
+    settingsModal: !!els.settingsModal,
+    connectBtn: !!els.connectBtn
+  });
+  
+  // Make els globally accessible
+  window.els = els;
+  
+  // Load saved API key
+  chrome.storage.local.get(['openaiApiKey'], (result) => {
+    if (result.openaiApiKey && els.apiKeyInput) {
+      els.apiKeyInput.value = result.openaiApiKey;
+    }
+  });
+  
+  // Initialize all event handlers
+  initializeEventHandlers();
 });
+
+// Move all the setup code into a function
+function initializeEventHandlers() {
+  const els = window.els;
 
 // Save API key
 els.saveSettingsBtn?.addEventListener('click', () => {
@@ -280,4 +301,7 @@ document.querySelector('#settingsBackdrop')?.addEventListener('click', () => {
   els.settingsModal?.classList.remove('open');
 });
 
-console.log('OpenAI Chat Mode ready!');
+  console.log('OpenAI Chat Mode ready!');
+}
+
+// Move all functions outside of DOMContentLoaded
