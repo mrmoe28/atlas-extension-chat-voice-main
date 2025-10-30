@@ -2,21 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "Desktop/atlas-voice-extension/dev/server/server.js",
+      "src": "server/server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "Desktop/atlas-voice-extension/dev/server/server.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "Desktop/atlas-voice-extension/dev/server/server.js"
+      "dest": "server/server.js"
     }
   ],
   "env": {
-    "OPENAI_REALTIME_MODEL": "gpt-4o-realtime-preview"
+    "OPENAI_REALTIME_MODEL": "gpt-4o-realtime-preview-2024-12-17"
   }
 }

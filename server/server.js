@@ -396,6 +396,12 @@ app.post('/api/vision', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Ephemeral server listening on http://localhost:${PORT}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Ephemeral server listening on http://localhost:${PORT}`);
+  });
+}
+
+// Export for Vercel
+export default app;
