@@ -427,6 +427,44 @@ async function processTranscript(text) {
     // Show user message immediately
     addMessage('user', text);
     
+    // Check for web browsing and automation commands
+    const lowerText = text.toLowerCase();
+    
+    if (lowerText.includes('search for') || 
+        lowerText.includes('look up') || 
+        lowerText.includes('browse') ||
+        lowerText.includes('open website') ||
+        lowerText.includes('go to')) {
+      
+      // Extract search query or URL
+      const searchQuery = extractSearchQuery(text);
+      if (searchQuery) {
+        await performWebSearch(searchQuery);
+      }
+    } else if (lowerText.includes('click on') || 
+               lowerText.includes('click the')) {
+      // Handle click commands
+      const target = extractClickTarget(text);
+      if (target) {
+        await performClick(target);
+      }
+    } else if (lowerText.includes('scroll down') || 
+               lowerText.includes('scroll up')) {
+      // Handle scroll commands
+      await performScroll(lowerText.includes('down') ? 'down' : 'up');
+    } else if (lowerText.includes('go back')) {
+      // Go back in browser history
+      await browserGoBack();
+    } else if (lowerText.includes('refresh') || 
+               lowerText.includes('reload')) {
+      // Refresh the page
+      await browserRefresh();
+    } else if (lowerText.includes('read the page') || 
+               lowerText.includes('what does it say')) {
+      // Extract and read page content
+      await readPageContent();
+    }
+    
     // Get ChatGPT response
     console.log('Getting ChatGPT response...');
     
@@ -712,6 +750,333 @@ async function sendTextMessage() {
   
   // Process the message
   await processTranscript(text);
+}
+
+// Extract search query from text
+function extractSearchQuery(text) {
+  const patterns = [
+    /search for (.+)/i,
+    /look up (.+)/i,
+    /browse (.+)/i,
+    /open website (.+)/i,
+    /go to (.+)/i,
+    /find information about (.+)/i,
+    /show me (.+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+// Perform web search
+async function performWebSearch(query) {
+  console.log('Performing web search for:', query);
+  
+  // Check if it's a URL
+  const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+  const isURL = urlPattern.test(query);
+  
+  if (isURL) {
+    // Open URL directly
+    const url = query.startsWith('http') ? query : 'https://' + query;
+    openWebsite(url);
+  } else {
+    // Perform Google search
+    const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+    openWebsite(searchUrl);
+    
+    // Also add a message about the search
+    addMessage('assistant', `Searching for "${query}"... Opening in a new tab.`);
+  }
+}
+
+// Open website in new tab or iframe
+function openWebsite(url) {
+  console.log('Opening website:', url);
+  
+  // Option 1: Open in new tab (works in extension)
+  chrome.tabs.create({ url: url }, (tab) => {
+    console.log('Opened tab:', tab);
+    addMessage('assistant', `Opened ${url} in a new tab. You can switch to that tab to view the website.`);
+  });
+  
+  // Option 2: If you want to show in an iframe (note: many sites block iframes)
+  // showWebsiteInPanel(url);
+}
+
+// Show website in panel (alternative approach)
+function showWebsiteInPanel(url) {
+  // Create iframe container if it doesn't exist
+  let iframeContainer = document.getElementById('websiteFrame');
+  
+  if (!iframeContainer) {
+    iframeContainer = document.createElement('div');
+    iframeContainer.id = 'websiteFrame';
+    iframeContainer.style.cssText = `
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 100px;
+      background: white;
+      z-index: 999;
+      display: none;
+    `;
+    
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Close';
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      padding: 5px 10px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    `;
+    closeBtn.onclick = () => {
+      iframeContainer.style.display = 'none';
+      iframeContainer.innerHTML = '';
+    };
+    
+    document.body.appendChild(iframeContainer);
+  }
+  
+  // Clear and show container
+  iframeContainer.innerHTML = '';
+  iframeContainer.appendChild(closeBtn);
+  
+  // Create iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = url;
+  iframe.style.cssText = 'width: 100%; height: 100%; border: none;';
+  iframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+  
+  iframeContainer.appendChild(iframe);
+  iframeContainer.style.display = 'block';
+  
+  addMessage('assistant', `Loading ${url}...`);
+}
+
+// Extract click target from text
+function extractClickTarget(text) {
+  const patterns = [
+    /click on (.+)/i,
+    /click the (.+)/i,
+    /click (.+)/i,
+    /press (.+)/i,
+    /tap (.+)/i
+  ];
+  
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  
+  return null;
+}
+
+// Perform click on element
+async function performClick(target) {
+  console.log('Clicking on:', target);
+  
+  try {
+    // Get active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      addMessage('assistant', 'No active tab found. Please open a website first.');
+      return;
+    }
+    
+    // Inject script to click element
+    const result = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (targetText) => {
+        // Find element by text content, link text, or button text
+        const elements = document.querySelectorAll('a, button, input[type="button"], input[type="submit"], [onclick], [role="button"]');
+        
+        for (const element of elements) {
+          const elementText = element.textContent?.toLowerCase() || element.value?.toLowerCase() || '';
+          const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
+          const title = element.getAttribute('title')?.toLowerCase() || '';
+          
+          if (elementText.includes(targetText.toLowerCase()) ||
+              ariaLabel.includes(targetText.toLowerCase()) ||
+              title.includes(targetText.toLowerCase())) {
+            element.click();
+            return `Clicked on "${targetText}"`;
+          }
+        }
+        
+        // Try to find by placeholder or name
+        const inputs = document.querySelectorAll('input, textarea');
+        for (const input of inputs) {
+          const placeholder = input.placeholder?.toLowerCase() || '';
+          const name = input.name?.toLowerCase() || '';
+          
+          if (placeholder.includes(targetText.toLowerCase()) ||
+              name.includes(targetText.toLowerCase())) {
+            input.focus();
+            return `Focused on input field "${targetText}"`;
+          }
+        }
+        
+        return `Could not find element: "${targetText}"`;
+      },
+      args: [target]
+    });
+    
+    addMessage('assistant', result[0].result);
+  } catch (error) {
+    console.error('Click error:', error);
+    addMessage('assistant', `Error clicking: ${error.message}`);
+  }
+}
+
+// Perform scroll
+async function performScroll(direction) {
+  console.log('Scrolling:', direction);
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      addMessage('assistant', 'No active tab found. Please open a website first.');
+      return;
+    }
+    
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (dir) => {
+        const scrollAmount = window.innerHeight * 0.8;
+        window.scrollBy({
+          top: dir === 'down' ? scrollAmount : -scrollAmount,
+          behavior: 'smooth'
+        });
+      },
+      args: [direction]
+    });
+    
+    addMessage('assistant', `Scrolled ${direction}`);
+  } catch (error) {
+    console.error('Scroll error:', error);
+    addMessage('assistant', `Error scrolling: ${error.message}`);
+  }
+}
+
+// Go back in browser history
+async function browserGoBack() {
+  console.log('Going back');
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      addMessage('assistant', 'No active tab found.');
+      return;
+    }
+    
+    await chrome.tabs.goBack(tab.id);
+    addMessage('assistant', 'Navigated back');
+  } catch (error) {
+    console.error('Go back error:', error);
+    addMessage('assistant', `Error going back: ${error.message}`);
+  }
+}
+
+// Refresh browser
+async function browserRefresh() {
+  console.log('Refreshing page');
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      addMessage('assistant', 'No active tab found.');
+      return;
+    }
+    
+    await chrome.tabs.reload(tab.id);
+    addMessage('assistant', 'Page refreshed');
+  } catch (error) {
+    console.error('Refresh error:', error);
+    addMessage('assistant', `Error refreshing: ${error.message}`);
+  }
+}
+
+// Read page content
+async function readPageContent() {
+  console.log('Reading page content');
+  
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      addMessage('assistant', 'No active tab found. Please open a website first.');
+      return;
+    }
+    
+    const result = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => {
+        // Get page title and main content
+        const title = document.title;
+        const url = window.location.href;
+        
+        // Try to get main content
+        const mainContent = document.querySelector('main, article, [role="main"], .content, #content');
+        let text = '';
+        
+        if (mainContent) {
+          text = mainContent.innerText.substring(0, 1000);
+        } else {
+          // Get body text
+          text = document.body.innerText.substring(0, 1000);
+        }
+        
+        return {
+          title,
+          url,
+          content: text
+        };
+      }
+    });
+    
+    const pageData = result[0].result;
+    const message = `Page: ${pageData.title}\nURL: ${pageData.url}\n\nContent:\n${pageData.content}...`;
+    
+    addMessage('assistant', message);
+    
+    // Also speak a summary
+    if (selectedVoice && connected) {
+      const summary = `The page title is ${pageData.title}. ${pageData.content.substring(0, 200)}`;
+      // Get API key for TTS
+      let apiKey = els.apiKeyInput?.value.trim();
+      if (!apiKey) {
+        const stored = await chrome.storage.local.get(['openaiApiKey']);
+        apiKey = stored.openaiApiKey;
+      }
+      if (apiKey) {
+        await speakWithOpenAI(summary, apiKey);
+      }
+    }
+  } catch (error) {
+    console.error('Read content error:', error);
+    addMessage('assistant', `Error reading page: ${error.message}`);
+  }
 }
 
 console.log('Atlas Voice Extension loaded');
