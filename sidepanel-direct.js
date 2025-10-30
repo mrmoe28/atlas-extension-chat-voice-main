@@ -37,8 +37,11 @@ els.saveSettingsBtn?.addEventListener('click', () => {
   if (apiKey) {
     chrome.storage.local.set({ openaiApiKey: apiKey }, () => {
       console.log('API key saved');
-      els.settingsModal.style.display = 'none';
+      els.settingsModal?.classList.remove('open');
+      alert('API key saved successfully!');
     });
+  } else {
+    alert('Please enter your OpenAI API key');
   }
 });
 
@@ -263,15 +266,29 @@ els.menuOverlay?.addEventListener('click', () => {
 
 // Settings button
 els.settingsBtn?.addEventListener('click', () => {
-  els.settingsModal.style.display = 'flex';
+  console.log('Settings button clicked');
+  if (els.settingsModal) {
+    els.settingsModal.classList.add('open');
+    console.log('Settings modal opened');
+  } else {
+    console.error('Settings modal element not found');
+  }
   // Close side menu if open
   els.sideMenu?.classList.remove('open');
   els.menuOverlay?.classList.remove('visible');
 });
 
-// Close settings modal
+// Close settings modal - multiple ways
+document.querySelector('.settings-close')?.addEventListener('click', () => {
+  els.settingsModal?.classList.remove('open');
+});
+
+document.querySelector('#settingsBackdrop')?.addEventListener('click', () => {
+  els.settingsModal?.classList.remove('open');
+});
+
 document.querySelector('.close-modal')?.addEventListener('click', () => {
-  els.settingsModal.style.display = 'none';
+  els.settingsModal?.classList.remove('open');
 });
 
 console.log('Direct OpenAI connection ready - no server needed!');
