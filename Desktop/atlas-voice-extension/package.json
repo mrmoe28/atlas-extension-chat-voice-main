@@ -1,0 +1,13 @@
+{
+  "name": "atlas-voice-extension",
+  "version": "0.2.1",
+  "type": "module",
+  "scripts": {
+    "build": "node dev/scripts/build-extension.js",
+    "build:zip": "npm run build && cd dev/build-tools/dist && zip -r ../../../atlas-voice-extension.zip .",
+    "release": "node dev/scripts/create-release.js",
+    "bump": "node dev/scripts/bump-version.js patch",
+    "bump:minor": "node dev/scripts/bump-version.js minor",
+    "bump:major": "node dev/scripts/bump-version.js major"
+  }
+}
