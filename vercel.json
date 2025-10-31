@@ -1,4 +1,5 @@
 {
+  "buildCommand": null,
   "functions": {
     "api/conversations.js": {
       "maxDuration": 10
